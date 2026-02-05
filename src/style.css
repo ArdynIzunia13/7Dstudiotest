@@ -1,78 +1,41 @@
 * {
   box-sizing: border-box;
 }
-
 html, body {
-  margin: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  background: black;
+  margin: 0;
+}
+body {
+  margin: 0;
+  background: #111;
+  color: white;
   font-family: Arial, sans-serif;
-}
-
-/* ---------- VIEWPORT ---------- */
-
-#viewport {
-  width: 100vw;
-  height: 100vh;
-  cursor: grab;
   overflow: hidden;
-  position: relative;
 }
 
-/* ---------- SPACE ---------- */
-
-#space {
-  position: absolute;
-  width: 4000px;
-  height: 4000px;
-  transform-origin: 0 0;
-}
-
-/* ---------- STARS ---------- */
-
-.star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  z-index: 1;
-}
-
-/* ---------- CONSTELLATIONS ---------- */
-
-#constellations {
-  position: absolute;
+.sky-section {
+  position: fixed;
   inset: 0;
-  pointer-events: auto;
-  z-index: 2;
+  background: black;
+  overflow: hidden;
 }
 
-.constellation-line {
-  position: absolute;
-  height: 1px;
-  background: rgba(180, 220, 255, 0.6);
-  transform-origin: 0 0;
-  cursor: pointer;
-  transition: background 0.2s, height 0.2s;
-}
-.constellation-line.hover {
-  background: #6ecbff;
-  height: 2px;
+#sky {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
 }
 
-/* ---------- POPUP ---------- */
-
-.constellation-popup {
+#tooltip {
   position: absolute;
   padding: 6px 10px;
   background: rgba(0, 0, 0, 0.85);
   color: #9fd3ff;
   font-size: 12px;
   border-radius: 6px;
-  white-space: nowrap;
   pointer-events: none;
   display: none;
-  z-index: 3;
+  white-space: nowrap;
 }
-
