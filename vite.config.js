@@ -1,8 +1,7 @@
-// vite.config.js
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/', 
+  base: '/7Dstudiotest/', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets'

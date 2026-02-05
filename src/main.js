@@ -49,7 +49,7 @@ for (let i = 0; i < 3500; i++) {
 
 const constellations = [
   {
-    name: 'Orion',
+    name: 'Стрела',
     stars: [
       { x: 2800, y: 2800 },
       { x: 2900, y: 2650 },
@@ -59,7 +59,7 @@ const constellations = [
     lines: [[0,1],[1,2],[1,3]]
   },
   {
-    name: 'Hamster',
+    name: 'Хомяк',
     stars: [
       { x: 1800, y: 3600 },
       { x: 1900, y: 3500 },
@@ -71,7 +71,7 @@ const constellations = [
     lines: [[0,1],[1,2],[0,3],[3,4],[4,5],[5,2]]
   },
   {
-    name: 'Tentacle Bot',
+    name: 'Робот',
     stars: [
       { x: 4300, y: 3000 },
       { x: 4300, y: 3200 },
@@ -83,7 +83,7 @@ const constellations = [
     lines: [[0,1],[1,2],[1,3],[1,4],[1,5]]
   },
   {
-    name: 'Dinosaur',
+    name: 'Динозавр',
     stars: [
       { x: 3600, y: 4200 },
       { x: 3750, y: 4150 },
