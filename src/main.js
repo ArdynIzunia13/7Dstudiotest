@@ -4,7 +4,7 @@ const canvas = document.getElementById('sky')
 const ctx = canvas.getContext('2d')
 const tooltip = document.getElementById('tooltip')
 
-/* ---------- RESIZE ---------- */
+/*  RESIZE  */
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect()
@@ -20,7 +20,7 @@ window.addEventListener('resize', () => {
   centerCameraOnAllConstellations()
 })
 
-/* ---------- CAMERA ---------- */
+/*  CAMERA  */
 
 let scale = 1
 let offsetX = 0
@@ -32,7 +32,7 @@ let dragStartY = 0
 
 let focusTarget = null
 
-/* ---------- DATA ---------- */
+/*  DATA  */
 
 const STAR_FIELD_SIZE = 6000
 const stars = []
@@ -98,7 +98,7 @@ const constellations = [
   }
 ]
 
-/* ---------- INITIAL FIT (ВАЖНО) ---------- */
+/*  INITIAL FIT (ВАЖНО)  */
 
 function getAllConstellationsBounds() {
   let minX = Infinity, minY = Infinity
@@ -141,7 +141,7 @@ function centerCameraOnAllConstellations() {
 
 centerCameraOnAllConstellations()
 
-/* ---------- COORDS ---------- */
+/*  COORDS  */
 
 function screenToWorld(x, y) {
   return {
@@ -150,7 +150,7 @@ function screenToWorld(x, y) {
   }
 }
 
-/* ---------- HIT TEST ---------- */
+/*  HIT TEST  */
 
 function pointNearLine(px, py, ax, ay, bx, by, threshold) {
   const dx = bx - ax
@@ -177,7 +177,7 @@ function getHoveredConstellation(mx, my) {
   return null
 }
 
-/* ---------- AUTO FOCUS ---------- */
+/*  AUTO FOCUS  */
 
 function getConstellationCenter(c) {
   let x = 0, y = 0
@@ -199,7 +199,7 @@ function focusOnConstellation(c) {
   }
 }
 
-/* ---------- EVENTS ---------- */
+/*  EVENTS  */
 
 canvas.addEventListener('mousedown', e => {
   isDragging = true
@@ -245,7 +245,7 @@ canvas.addEventListener('wheel', e => {
   offsetY = my - wy * scale
 }, { passive: false })
 
-/* ---------- RENDER ---------- */
+/*  RENDER  */
 
 let time = 0
 
