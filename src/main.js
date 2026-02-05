@@ -4,7 +4,7 @@ const canvas = document.getElementById('sky')
 const ctx = canvas.getContext('2d')
 const tooltip = document.getElementById('tooltip')
 
-/*  RESIZE  */
+/* ---------- RESIZE ---------- */
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect()
@@ -20,7 +20,7 @@ window.addEventListener('resize', () => {
   centerCameraOnAllConstellations()
 })
 
-/*  CAMERA  */
+/* ---------- CAMERA ---------- */
 
 let scale = 1
 let offsetX = 0
@@ -32,7 +32,14 @@ let dragStartY = 0
 
 let focusTarget = null
 
-/*  DATA  */
+/* ---------- TOUCH ---------- */
+
+let isTouchDragging = false
+let lastTouchX = 0
+let lastTouchY = 0
+let lastTouchDistance = 0
+
+/* ---------- DATA ---------- */
 
 const STAR_FIELD_SIZE = 6000
 const stars = []
@@ -98,7 +105,7 @@ const constellations = [
   }
 ]
 
-/*  INITIAL FIT (ВАЖНО)  */
+/* ---------- INITIAL FIT ---------- */
 
 function getAllConstellationsBounds() {
   let minX = Infinity, minY = Infinity
@@ -116,32 +123,26 @@ function getAllConstellationsBounds() {
   return {
     minX,
     minY,
-    maxX,
-    maxY,
     width: maxX - minX,
     height: maxY - minY
   }
 }
 
 function centerCameraOnAllConstellations() {
-  const bounds = getAllConstellationsBounds()
+  const b = getAllConstellationsBounds()
   const padding = 300
 
-  const scaleX = canvas.width / (bounds.width + padding)
-  const scaleY = canvas.height / (bounds.height + padding)
+  const sx = canvas.width / (b.width + padding)
+  const sy = canvas.height / (b.height + padding)
+  scale = Math.min(sx, sy, 0.8)
 
-  scale = Math.min(scaleX, scaleY, 0.8)
-
-  const centerX = bounds.minX + bounds.width / 2
-  const centerY = bounds.minY + bounds.height / 2
-
-  offsetX = canvas.width / 2 - centerX * scale
-  offsetY = canvas.height / 2 - centerY * scale
+  offsetX = canvas.width / 2 - (b.minX + b.width / 2) * scale
+  offsetY = canvas.height / 2 - (b.minY + b.height / 2) * scale
 }
 
 centerCameraOnAllConstellations()
 
-/*  COORDS  */
+/* ---------- COORDS ---------- */
 
 function screenToWorld(x, y) {
   return {
@@ -150,26 +151,24 @@ function screenToWorld(x, y) {
   }
 }
 
-/*  HIT TEST  */
+/* ---------- HIT TEST ---------- */
 
-function pointNearLine(px, py, ax, ay, bx, by, threshold) {
+function pointNearLine(px, py, ax, ay, bx, by, t) {
   const dx = bx - ax
   const dy = by - ay
-  const len2 = dx * dx + dy * dy
-  let t = ((px - ax) * dx + (py - ay) * dy) / len2
-  t = Math.max(0, Math.min(1, t))
-  const lx = ax + t * dx
-  const ly = ay + t * dy
-  return Math.hypot(px - lx, py - ly) < threshold
+  const l2 = dx * dx + dy * dy
+  let u = ((px - ax) * dx + (py - ay) * dy) / l2
+  u = Math.max(0, Math.min(1, u))
+  return Math.hypot(px - (ax + u * dx), py - (ay + u * dy)) < t
 }
 
 function getHoveredConstellation(mx, my) {
-  const pos = screenToWorld(mx, my)
+  const p = screenToWorld(mx, my)
   for (const c of constellations) {
     for (const [a, b] of c.lines) {
       const A = c.stars[a]
       const B = c.stars[b]
-      if (pointNearLine(pos.x, pos.y, A.x, A.y, B.x, B.y, 6 / scale)) {
+      if (pointNearLine(p.x, p.y, A.x, A.y, B.x, B.y, 6 / scale)) {
         return c
       }
     }
@@ -177,29 +176,25 @@ function getHoveredConstellation(mx, my) {
   return null
 }
 
-/*  AUTO FOCUS  */
+/* ---------- FOCUS ---------- */
 
-function getConstellationCenter(c) {
+function focusOnConstellation(c) {
   let x = 0, y = 0
   for (const s of c.stars) {
     x += s.x
     y += s.y
   }
-  return { x: x / c.stars.length, y: y / c.stars.length }
-}
-
-function focusOnConstellation(c) {
-  const center = getConstellationCenter(c)
-  const targetScale = 1.5
+  x /= c.stars.length
+  y /= c.stars.length
 
   focusTarget = {
-    scale: targetScale,
-    x: canvas.width / 2 - center.x * targetScale,
-    y: canvas.height / 2 - center.y * targetScale
+    scale: 1.5,
+    x: canvas.width / 2 - x * 1.5,
+    y: canvas.height / 2 - y * 1.5
   }
 }
 
-/*  EVENTS  */
+/* ---------- MOUSE ---------- */
 
 canvas.addEventListener('mousedown', e => {
   isDragging = true
@@ -207,7 +202,7 @@ canvas.addEventListener('mousedown', e => {
   dragStartY = e.clientY - offsetY
 })
 
-window.addEventListener('mouseup', () => (isDragging = false))
+window.addEventListener('mouseup', () => isDragging = false)
 
 window.addEventListener('mousemove', e => {
   if (isDragging) {
@@ -216,13 +211,11 @@ window.addEventListener('mousemove', e => {
   }
 
   const c = getHoveredConstellation(e.clientX, e.clientY)
+  tooltip.style.display = c ? 'block' : 'none'
   if (c) {
     tooltip.innerText = c.name
-    tooltip.style.display = 'block'
     tooltip.style.left = e.clientX + 12 + 'px'
     tooltip.style.top = e.clientY + 12 + 'px'
-  } else {
-    tooltip.style.display = 'none'
   }
 })
 
@@ -234,18 +227,53 @@ canvas.addEventListener('click', e => {
 canvas.addEventListener('wheel', e => {
   e.preventDefault()
   const zoom = e.deltaY > 0 ? 0.9 : 1.1
-  const mx = e.clientX
-  const my = e.clientY
-
-  const wx = (mx - offsetX) / scale
-  const wy = (my - offsetY) / scale
-
+  const wx = (e.clientX - offsetX) / scale
+  const wy = (e.clientY - offsetY) / scale
   scale = Math.min(Math.max(scale * zoom, 0.4), 3)
-  offsetX = mx - wx * scale
-  offsetY = my - wy * scale
+  offsetX = e.clientX - wx * scale
+  offsetY = e.clientY - wy * scale
 }, { passive: false })
 
-/*  RENDER  */
+/* ---------- TOUCH ---------- */
+
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    isTouchDragging = true
+    lastTouchX = e.touches[0].clientX
+    lastTouchY = e.touches[0].clientY
+  }
+}, { passive: false })
+
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && isTouchDragging) {
+    const t = e.touches[0]
+    offsetX += t.clientX - lastTouchX
+    offsetY += t.clientY - lastTouchY
+    lastTouchX = t.clientX
+    lastTouchY = t.clientY
+  }
+
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX
+    const dy = e.touches[0].clientY - e.touches[1].clientY
+    const dist = Math.hypot(dx, dy)
+
+    if (!lastTouchDistance) {
+      lastTouchDistance = dist
+      return
+    }
+
+    scale = Math.min(Math.max(scale * (dist / lastTouchDistance), 0.4), 3)
+    lastTouchDistance = dist
+  }
+}, { passive: false })
+
+canvas.addEventListener('touchend', () => {
+  isTouchDragging = false
+  lastTouchDistance = 0
+})
+
+/* ---------- RENDER ---------- */
 
 let time = 0
 
@@ -257,9 +285,7 @@ function draw() {
     scale += (focusTarget.scale - scale) * 0.08
     offsetX += (focusTarget.x - offsetX) * 0.08
     offsetY += (focusTarget.y - offsetY) * 0.08
-    if (Math.abs(scale - focusTarget.scale) < 0.01) {
-      focusTarget = null
-    }
+    if (Math.abs(scale - focusTarget.scale) < 0.01) focusTarget = null
   }
 
   ctx.save()
@@ -267,14 +293,13 @@ function draw() {
   ctx.scale(scale, scale)
 
   for (const s of stars) {
-    const a = s.baseA + Math.sin(time + s.phase) * 0.15
-    ctx.fillStyle = `rgba(255,255,255,${a})`
+    ctx.fillStyle = `rgba(255,255,255,${s.baseA})`
     ctx.beginPath()
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  ctx.strokeStyle = 'rgba(150,200,255,0.6)'
+  ctx.strokeStyle = 'rgba(150,200,255,0.7)'
   ctx.lineWidth = 1 / scale
 
   for (const c of constellations) {
