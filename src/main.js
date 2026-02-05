@@ -39,24 +39,26 @@ let lastTouchX = 0
 let lastTouchY = 0
 let lastTouchDistance = 0
 
-/* ---------- DATA ---------- */
+/* ---------- STARS ---------- */
 
 const STAR_FIELD_SIZE = 6000
 const stars = []
 
-for (let i = 0; i < 3500; i++) {
+for (let i = 0; i < 4000; i++) {
   stars.push({
     x: Math.random() * STAR_FIELD_SIZE,
     y: Math.random() * STAR_FIELD_SIZE,
-    r: Math.random() * 1.5 + 0.5,
+    r: Math.random() * 1.4 + 0.4,
     baseA: Math.random() * 0.4 + 0.6,
     phase: Math.random() * Math.PI * 2
   })
 }
 
+/* ---------- CONSTELLATIONS ---------- */
+
 const constellations = [
   {
-    name: 'Стрела',
+    name: 'Orion',
     stars: [
       { x: 2800, y: 2800 },
       { x: 2900, y: 2650 },
@@ -66,7 +68,7 @@ const constellations = [
     lines: [[0,1],[1,2],[1,3]]
   },
   {
-    name: 'Хомяк',
+    name: 'Hamster',
     stars: [
       { x: 1800, y: 3600 },
       { x: 1900, y: 3500 },
@@ -78,7 +80,7 @@ const constellations = [
     lines: [[0,1],[1,2],[0,3],[3,4],[4,5],[5,2]]
   },
   {
-    name: 'Робот',
+    name: 'Tentacle Bot',
     stars: [
       { x: 4300, y: 3000 },
       { x: 4300, y: 3200 },
@@ -90,7 +92,7 @@ const constellations = [
     lines: [[0,1],[1,2],[1,3],[1,4],[1,5]]
   },
   {
-    name: 'Динозавр',
+    name: 'Dinosaur',
     stars: [
       { x: 3600, y: 4200 },
       { x: 3750, y: 4150 },
@@ -120,21 +122,15 @@ function getAllConstellationsBounds() {
     }
   }
 
-  return {
-    minX,
-    minY,
-    width: maxX - minX,
-    height: maxY - minY
-  }
+  return { minX, minY, width: maxX - minX, height: maxY - minY }
 }
 
 function centerCameraOnAllConstellations() {
   const b = getAllConstellationsBounds()
-  const padding = 300
-
+  const padding = 400
   const sx = canvas.width / (b.width + padding)
   const sy = canvas.height / (b.height + padding)
-  scale = Math.min(sx, sy, 0.8)
+  scale = Math.min(sx, sy, 0.75)
 
   offsetX = canvas.width / 2 - (b.minX + b.width / 2) * scale
   offsetY = canvas.height / 2 - (b.minY + b.height / 2) * scale
@@ -142,16 +138,33 @@ function centerCameraOnAllConstellations() {
 
 centerCameraOnAllConstellations()
 
-/* ---------- COORDS ---------- */
+/* ---------- HELPERS ---------- */
 
 function screenToWorld(x, y) {
-  return {
-    x: (x - offsetX) / scale,
-    y: (y - offsetY) / scale
-  }
+  return { x: (x - offsetX) / scale, y: (y - offsetY) / scale }
 }
 
-/* ---------- HIT TEST ---------- */
+function drawStar(x, y, r, alpha) {
+  ctx.save()
+  ctx.globalAlpha = alpha
+
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 4)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.3, 'rgba(180,220,255,0.9)')
+  g.addColorStop(1, 'rgba(180,220,255,0)')
+
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(x, y, r * 4, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#fff'
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
+}
 
 function pointNearLine(px, py, ax, ay, bx, by, t) {
   const dx = bx - ax
@@ -168,7 +181,7 @@ function getHoveredConstellation(mx, my) {
     for (const [a, b] of c.lines) {
       const A = c.stars[a]
       const B = c.stars[b]
-      if (pointNearLine(p.x, p.y, A.x, A.y, B.x, B.y, 6 / scale)) {
+      if (pointNearLine(p.x, p.y, A.x, A.y, B.x, B.y, 7 / scale)) {
         return c
       }
     }
@@ -176,32 +189,26 @@ function getHoveredConstellation(mx, my) {
   return null
 }
 
-/* ---------- FOCUS ---------- */
-
 function focusOnConstellation(c) {
   let x = 0, y = 0
-  for (const s of c.stars) {
-    x += s.x
-    y += s.y
-  }
+  for (const s of c.stars) { x += s.x; y += s.y }
   x /= c.stars.length
   y /= c.stars.length
 
   focusTarget = {
-    scale: 1.5,
-    x: canvas.width / 2 - x * 1.5,
-    y: canvas.height / 2 - y * 1.5
+    scale: 1.6,
+    x: canvas.width / 2 - x * 1.6,
+    y: canvas.height / 2 - y * 1.6
   }
 }
 
-/* ---------- MOUSE ---------- */
+/* ---------- EVENTS (mouse + touch) ---------- */
 
 canvas.addEventListener('mousedown', e => {
   isDragging = true
   dragStartX = e.clientX - offsetX
   dragStartY = e.clientY - offsetY
 })
-
 window.addEventListener('mouseup', () => isDragging = false)
 
 window.addEventListener('mousemove', e => {
@@ -234,8 +241,6 @@ canvas.addEventListener('wheel', e => {
   offsetY = e.clientY - wy * scale
 }, { passive: false })
 
-/* ---------- TOUCH ---------- */
-
 canvas.addEventListener('touchstart', e => {
   if (e.touches.length === 1) {
     isTouchDragging = true
@@ -257,12 +262,7 @@ canvas.addEventListener('touchmove', e => {
     const dx = e.touches[0].clientX - e.touches[1].clientX
     const dy = e.touches[0].clientY - e.touches[1].clientY
     const dist = Math.hypot(dx, dy)
-
-    if (!lastTouchDistance) {
-      lastTouchDistance = dist
-      return
-    }
-
+    if (!lastTouchDistance) return lastTouchDistance = dist
     scale = Math.min(Math.max(scale * (dist / lastTouchDistance), 0.4), 3)
     lastTouchDistance = dist
   }
@@ -292,6 +292,7 @@ function draw() {
   ctx.translate(offsetX, offsetY)
   ctx.scale(scale, scale)
 
+  // фоновые звезды
   for (const s of stars) {
     ctx.fillStyle = `rgba(255,255,255,${s.baseA})`
     ctx.beginPath()
@@ -299,9 +300,9 @@ function draw() {
     ctx.fill()
   }
 
-  ctx.strokeStyle = 'rgba(150,200,255,0.7)'
-  ctx.lineWidth = 1 / scale
-
+  // линии созвездий
+  ctx.strokeStyle = 'rgba(120,170,255,0.45)'
+  ctx.lineWidth = 0.8 / scale
   for (const c of constellations) {
     for (const [a, b] of c.lines) {
       const A = c.stars[a]
@@ -310,6 +311,13 @@ function draw() {
       ctx.moveTo(A.x, A.y)
       ctx.lineTo(B.x, B.y)
       ctx.stroke()
+    }
+  }
+
+  // ЗВЕЗДЫ СОЗВЕЗДИЙ (ГЛАВНОЕ)
+  for (const c of constellations) {
+    for (const s of c.stars) {
+      drawStar(s.x, s.y, 2.4, 1)
     }
   }
 

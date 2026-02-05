@@ -13,7 +13,9 @@ body {
   font-family: Arial, sans-serif;
   overflow: hidden;
 }
-
+canvas {
+  touch-action: none;
+}
 .sky-section {
   position: fixed;
   inset: 0;
